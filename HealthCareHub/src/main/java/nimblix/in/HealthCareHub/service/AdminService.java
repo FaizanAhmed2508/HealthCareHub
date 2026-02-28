@@ -1,20 +1,17 @@
 package nimblix.in.HealthCareHub.service;
 
-import nimblix.in.HealthCareHub.model.Medicine;
-
-import java.util.List;
+import nimblix.in.HealthCareHub.request.MedicineRequest;
+import org.springframework.http.ResponseEntity;
 
 public interface AdminService {
 
-    Medicine createMedicine(Medicine medicine);
+    String addMedicine(MedicineRequest request);
 
-    List<Medicine> getAllMedicines();
+    ResponseEntity<?> getMedicineDetails(Long medicineId, Long hospitalId);
 
-    Medicine getMedicineById(Long id);
+    String updateMedicineDetails(MedicineRequest request);
 
-    Medicine updateMedicine(Long id, Medicine medicine);
+    String deleteMedicineDetails(Long medicineId);
 
-    boolean deleteMedicine(Long id);
-
-    Medicine updateMedicineStock(Long id, int quantity);
+    String updateMedicineStock(Long medicineId, Integer quantity);
 }

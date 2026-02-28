@@ -1,65 +1,112 @@
 package nimblix.in.HealthCareHub.serviceImpl;
 
 import lombok.RequiredArgsConstructor;
+import nimblix.in.HealthCareHub.constants.HealthCareConstants;
+import nimblix.in.HealthCareHub.model.Hospital;
 import nimblix.in.HealthCareHub.model.Medicine;
+import nimblix.in.HealthCareHub.repository.HospitalRepository;
 import nimblix.in.HealthCareHub.repository.MedicineRepository;
+import nimblix.in.HealthCareHub.request.MedicineRequest;
 import nimblix.in.HealthCareHub.service.AdminService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class AdminServiceImpl implements AdminService {
 
     private final MedicineRepository medicineRepository;
+    private final HospitalRepository hospitalRepository;
 
     @Override
-    public Medicine createMedicine(Medicine medicine) {
-        return medicineRepository.save(medicine);
+    public String addMedicine(MedicineRequest request) {
+
+        Hospital hospital = hospitalRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+
+        Medicine medicine = new Medicine();
+
+        medicine.setMedicineName(request.getMedicineName());
+        medicine.setManufacturer(request.getManufacturer());
+        medicine.setDescription(request.getDescription());
+        medicine.setDosage(request.getDosage());
+        medicine.setPrice(request.getPrice());
+        medicine.setStockQuantity(request.getStockQuantity());
+        medicine.setHospital(hospital);
+        medicine.setIsActive(HealthCareConstants.ACTIVE);
+
+        medicineRepository.save(medicine);
+
+        return "Medicine Added Successfully";
     }
 
     @Override
-    public List<Medicine> getAllMedicines() {
-        return medicineRepository.findAll();
+    public ResponseEntity<?> getMedicineDetails(Long medicineId, Long hospitalId) {
+
+        Medicine medicine = medicineRepository
+                .findByIdAndHospitalId(medicineId, hospitalId)
+                .orElseThrow(() ->
+                        new RuntimeException("Medicine not found in this hospital"));
+
+        return ResponseEntity.status(HttpStatus.OK).body(medicine);
     }
 
     @Override
-    public Medicine getMedicineById(Long id) {
-        return medicineRepository.findById(id).orElse(null);
+    public String updateMedicineDetails(MedicineRequest request) {
+
+        Medicine medicine = medicineRepository.findById(request.getMedicineId())
+                .orElseThrow(() -> new RuntimeException("Medicine not found"));
+
+        Hospital hospital = hospitalRepository.findById(request.getHospitalId())
+                .orElseThrow(() -> new RuntimeException("Hospital not found"));
+
+        medicine.setMedicineName(request.getMedicineName());
+        medicine.setManufacturer(request.getManufacturer());
+        medicine.setDescription(request.getDescription());
+        medicine.setDosage(request.getDosage());
+        medicine.setPrice(request.getPrice());
+        medicine.setStockQuantity(request.getStockQuantity());
+        medicine.setHospital(hospital);
+
+        medicineRepository.save(medicine);
+
+        return "Medicine Updated Successfully";
     }
 
     @Override
-    public Medicine updateMedicine(Long id, Medicine updatedMedicine) {
+    public String deleteMedicineDetails(Long medicineId) {
 
-        return medicineRepository.findById(id)
-                .map(medicine -> {
-                    medicine.setName(updatedMedicine.getName());
-                    medicine.setPrice(updatedMedicine.getPrice());
-                    medicine.setStock(updatedMedicine.getStock());
-                    return medicineRepository.save(medicine);
-                })
-                .orElse(null);
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() ->
+                        new RuntimeException("Medicine not found with id: " + medicineId));
+
+        medicine.setIsActive(HealthCareConstants.IN_ACTIVE);
+
+        medicineRepository.save(medicine);
+
+        return "Medicine Deleted Successfully";
     }
 
     @Override
-    public boolean deleteMedicine(Long id) {
+    public String updateMedicineStock(Long medicineId, Integer quantity) {
 
-        if (medicineRepository.existsById(id)) {
-            medicineRepository.deleteById(id);
-            return true;
+        Medicine medicine = medicineRepository.findById(medicineId)
+                .orElseThrow(() ->
+                        new RuntimeException("Medicine not found with id: " + medicineId));
+
+        if (quantity == null) {
+            return "Quantity cannot be null";
         }
-        return false;
-    }
 
-    @Override
-    public Medicine updateMedicineStock(Long id, int quantity) {
+        if (quantity < 0) {
+            return "Quantity cannot be negative";
+        }
 
-        return medicineRepository.findById(id)
-                .map(medicine -> {
-                    medicine.setStock(medicine.getStock() + quantity);
-                    return medicineRepository.save(medicine);
-                })
-                .orElse(null);
+        medicine.setStockQuantity(quantity);
+
+        medicineRepository.save(medicine);
+
+        return "Medicine Stock Updated Successfully";
     }
 }
